@@ -1,0 +1,51 @@
+language ESSENCE' 1.0
+
+given NUM_GROUPS : int(1..)
+given NUM_TEACHERS : int(1..)
+
+letting SUNDAY    be 0
+letting MONDAY    be 1
+letting TUESDAY   be 2
+letting WEDNESDAY be 3
+letting THURSDAY  be 4
+
+letting MINHRS    be 16
+letting MAXHRS    be 26
+
+letting GROUP   be domain int(0..NUM_GROUPS-1)
+letting DAY     be domain int(SUNDAY..THURSDAY)
+letting TEACHER be domain int(0..NUM_TEACHERS-1)
+letting SLOT    be domain int(0..3)
+
+given Demand        : matrix indexed by [GROUP,DAY,SLOT] of int(0..1)
+given Availability  : matrix indexed by [TEACHER,int(0..1)] of int(MINHRS..MAXHRS)
+
+find  Roster        : matrix indexed by [GROUP,DAY,TEACHER,SLOT] of int(0..1)
+
+such that
+
+$ Each teacher must be assigned atleast MinHrs and atmost MaxHrs
+forAll t : TEACHER .
+    sum(flatten(Roster[..,..,t,..])) >= Availability[t,0]/2,
+
+forAll t : TEACHER .
+    sum(flatten(Roster[..,..,t,..])) <= Availability[t,1]/2,
+
+$ Each group must have all its slots assigned
+forAll g : GROUP .
+    forAll d : DAY .
+        table([ sum(Roster[g,d,..,s]) | s : SLOT ], [Demand[g,d,..]]),
+
+$ A teacher cannot be assigned to more than one group in one slot on the same day
+forAll d : DAY .
+    forAll t : TEACHER .
+        forAll s : SLOT .
+            sum(Roster[..,d,t,s]) <= 1,
+
+$ Two or more teachers must not occupy same slot on same day for same group
+forAll g : GROUP .
+    forAll d : DAY .
+        forAll s : SLOT .
+            sum(Roster[g,d,..,s]) <= 1
+
+
