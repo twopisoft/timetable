@@ -5,7 +5,7 @@ import sys
 import warnings
 
 if len(sys.argv) < 4:
-    print 'Usage: python genparam.py <NUM_GROUPS> <NUM_TEACHERS> <input xslx file> [<output param file>]'
+    print 'Usage: python genparam.py <NUM_GROUPS> <NUM_TEACHERS> <input xslx file> [<output param file>] [<availabilty file>]'
     sys.exit(0)
 
 NUM_GROUPS = int(sys.argv[1])
@@ -67,17 +67,25 @@ def __availability():
 
     return availabilty
 
-def __write_param_file(all_slots,availabilty):
+def write_param_file(all_slots,availabilty):
 
-    PARAM_FILE = sys.argv[4]
+    if len(sys.argv) >= 5:
+        PARAM_FILE = sys.argv[4]
 
-    print 'Writing param file "{0}" ...'.format(PARAM_FILE)
-    with open(PARAM_FILE,'w') as outfile:
-        outfile.write('letting NUM_GROUPS = {}\n'.format(len(all_slots)))
-        outfile.write('letting NUM_TEACHERS = {}\n'.format(NUM_TEACHERS))
-        outfile.write('\nletting Demand = ' + str(all_slots))
-        outfile.write('\n\nletting Availability = ' + str(availabilty))
+        print 'Writing param file "{0}" ...'.format(PARAM_FILE)
+        with open(PARAM_FILE,'w') as outfile:
+            outfile.write('letting NUM_GROUPS = {}\n'.format(len(all_slots)))
+            outfile.write('letting NUM_TEACHERS = {}\n'.format(NUM_TEACHERS))
+            outfile.write('\nletting Demand = ' + str(all_slots))
+            outfile.write('\n\nletting Availability = ' + str(availabilty))
 
+def write_availability_file(availability):
+    if len(sys.argv) >= 6:
+        AVAILABILITY_FILE = sys.argv[5]
+
+        print 'Writing Availability file "{0}" ...'.format(AVAILABILITY_FILE)
+        with open(AVAILABILITY_FILE,'w') as outfile:
+            outfile.write(str(availability))
 
 def test_resource_match(all_slots) :
 
@@ -114,8 +122,6 @@ def test_week_hrs(all_slots):
 
 if __name__ == "__main__":
 
-    argc = len(sys.argv)
-
     print 'DAY RANGE={0}, NUM_GROUPS={1}, NUM_TEACHERS={2}'.format(DAY_RANGE,NUM_GROUPS,NUM_TEACHERS)
 
     print 'Reading Excel Data ...'
@@ -127,9 +133,10 @@ if __name__ == "__main__":
     ws = wb.active
 
     all_slots = __read_slots(ws)
+    availability = __availability()
 
     test_resource_match(all_slots)
     test_week_hrs(all_slots)
 
-    if argc == 5:
-        __write_param_file(all_slots,__availability())
+    write_param_file(all_slots,availability)
+    write_availability_file(availability)

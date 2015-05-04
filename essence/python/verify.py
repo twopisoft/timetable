@@ -1,118 +1,119 @@
 from pyparsing import Word, Literal, alphas, OneOrMore, Optional, Group, SkipTo, Suppress
 import sys
 
-if len(sys.argv) <= 1:
-    print 'Usage: python verify.py <NUM_GROUPS> <NUM_TEACHERS>'
+if len(sys.argv) != 5:
+    print 'Usage: python verify.py <NUM_GROUPS> <NUM_TEACHERS> <Solution file> <Availability file>'
     sys.exit(0)
 
-SLOTS = 4
-TEACHERS = int(sys.argv[2])
-DAYS = 5
 GROUPS = int(sys.argv[1])
+TEACHERS = int(sys.argv[2])
+SOLFILE = sys.argv[3]
+AVAFILE = sys.argv[4]
 
-left = '['
-right = ']'
-digits = "0123456789"
-comma = ","
-semicolon = ";"
-lparen = '('
-rparen = ')'
-intspec = 'int'
-ellipses = '..'
-varname = Word(alphas)
-rangespec = Word(digits) + ellipses + Optional(Word(digits))
-typespec = semicolon + intspec + lparen + rangespec + rparen
-varspec = 'letting' + varname + 'be'
-valspec = Word(digits) + Optional(comma)
-vecspec = left + OneOrMore(valspec) + Suppress(typespec) + right
-vecspecm = left + OneOrMore(vecspec.setResultsName('vec',listAllMatches=True) + Optional(comma)) + Suppress(typespec) + right
-vecspecmm = left + OneOrMore(vecspecm + Optional(comma)) + Suppress(typespec) + right
-matspec = SkipTo(left) + left + OneOrMore(vecspecmm + Optional(comma)) + Suppress(typespec) + right
+SLOTS = 40
+WKHRS = 16
+MINHRS = 18
+MAXHRS = 26
 
-solFile = 'big_{}.param.solution'.format(TEACHERS)
+def __def_parser():
 
-print 'NUM_GROUPS={0}, NUM_TEACHERS={1}, solFile={2}'.format(GROUPS,TEACHERS,solFile)
+    left = '['
+    right = ']'
+    digits = "0123456789"
+    comma = ","
+    semicolon = ";"
+    lparen = '('
+    rparen = ')'
+    intspec = 'int'
+    ellipses = '..'
+    varname = Word(alphas)
+    rangespec = Word(digits) + ellipses + Optional(Word(digits))
+    typespec = semicolon + intspec + lparen + rangespec + rparen
+    varspec = 'letting' + varname + 'be'
+    valspec = Word(digits) + Optional(comma)
+    vecspec = left + OneOrMore(valspec) + Suppress(typespec) + right
+    matspec = SkipTo(left) + left + OneOrMore(vecspec.setResultsName('vec',listAllMatches=True) + Optional(comma)) + Suppress(typespec) + right
 
-data = ''
-with open(solFile, 'r') as infile:
-    data = infile.read().replace('\n','')
+    return matspec
 
-result = matspec.parseString(data)
+def __parse_data(f):
+    data = ''
+    with open(SOLFILE, 'r') as infile:
+        data = infile.read().replace('\n','')
 
-roster = [[[[0 for _ in range(SLOTS)] for _ in range(TEACHERS)] for _ in range(DAYS)] for _ in range(GROUPS)]
+    result = __def_parser().parseString(data)
 
-vecs = []
-for vec in result['vec']:
-    str = ""
-    for x in vec:
-        str += x
-    vecs.append(eval(str))
+    roster = []
+    for vec in result['vec']:
+        str = ""
+        for x in vec:
+            str += x
+        roster.append(eval(str))
 
-for g in range(GROUPS):
-    for d in range(DAYS):
-        for t in range(TEACHERS):
-            roster[g][d][t] = vecs[g*GROUPS*DAYS+d*TEACHERS+t]
+    return roster
 
-tot = 0
-for v in vecs:
-    tot += sum(v)*2
+def __read_availability(f):
+    data = ''
+    with open(f,'r') as infile:
+        data = infile.read().replace('\n','')
 
-print('\nTotal Hours scheduled: {0}'.format(tot))
+    return eval(data)
 
-rtot = 0
-for g in range(GROUPS):
-    for d in range(DAYS):
-        for t in range(TEACHERS):
-            rtot += sum(roster[g][d][t])*2
+def test_group_hours(roster):
+    data_ok = True
 
-print('\nTotal Hours scheduled in roster: {0}'.format(rtot))  
+    for (i,g) in enumerate(roster):
+        study_hrs = len(g) - g.count(0)
+        if study_hrs != WKHRS:
+            data_ok = False
+            print "Group {0} hours not scheduled correctly: {1} != {2}".format(i+1,study_hrs,WKHRS)
 
-print ('\nChecking for clashes...')
+    if data_ok:
+        print "Groups Study Hours: Ok"
 
-clashes = 0
-for d in range(DAYS):
-    for g in range(GROUPS):
-        for t1 in range(TEACHERS):
-            if roster[g][d][t1] == [0]*SLOTS:
-                continue
-            else:
-                for t2 in range(t1+1,TEACHERS):
-                    if roster[g][d][t2] == [0]*SLOTS:
-                        continue
-                    else:
-                        clashes += 1 if roster[g][d][t1] == roster[g][d][t2] else 0
+    return data_ok
 
-print ("{} clashes found".format(clashes))    
+def test_teacher_hours(roster,availability):
+    data_ok = True
 
-for g in range(GROUPS):
-    th = 0
-    for d in range(DAYS):
-        for t in range(TEACHERS):
-            th += sum(roster[g][d][t])*2
-    print ("Group {} total hrs scheduled per week={}".format(g,th))
+    t_hrs = { i:0 for i in range(1,TEACHERS+1) }
+    for g in roster:
+        for s in g:
+            if s != 0:
+                t_hrs[s] += 1
 
-print ('\n')
+    for t in t_hrs.keys():
+        if (t_hrs[t] < availability[t-1][0]) or (t_hrs[t] > availability[t-1][1]):
+            data_ok = False
+            print "Scheduled Hours for Teacher {0} violated: {1}: [{2},{3}]".format(t,t_hrs[t],availability[t-1][0],availability[t-1][1])
 
-for t in range(TEACHERS):
-    th = 0
-    for g in range(GROUPS):
-        for d in range(DAYS):
-            th += sum(roster[g][d][t])*2
-    print ("Teacher {} total hrs scheduled per week={}".format(t,th))
+    if data_ok:
+        print "Teacher Scheduled Hours: Ok"
 
+    return data_ok
 
+def test_teacher_clash(roster):
+    data_ok = True
 
-  
+    for s in range(SLOTS):
+        slot_assigns = [ roster[g][s] for g in range(GROUPS) if roster[g][s] != 0]
+        if len(slot_assigns) > len(set(slot_assigns)):
+            data_ok = False
+            print "Clash detected on slot {0}".format(s)
 
+    if data_ok:
+        print "Clash detected: None"
 
+    return data_ok
 
+if __name__ == "__main__":
 
+    print 'NUM_GROUPS={0}, NUM_TEACHERS={1}, SOLFILE={2}, AVAFILE={3}'.format(GROUPS,TEACHERS,SOLFILE,AVAFILE)
 
+    roster = __parse_data(SOLFILE)
 
+    availability = __read_availability(AVAFILE)
 
-
-
-
-
-
-
+    test_group_hours(roster)
+    test_teacher_hours(roster,availability)
+    test_teacher_clash(roster)
