@@ -32,7 +32,7 @@ $ All the assigned teachers for a slot must be different
 forAll s : SLOT .
     alldifferent_except(Roster[..,s],0),
 
-$ Every teacher must be assigned at least his MINHRS
+$ Every teacher must not be assigned less than his MINHRS
 atleast(flatten(Roster), [ Availability[t,0] | t : TEACHER], [ t | t : TEACHER ]),
 
 $ Every teacher must not be assigned more than his MAXHRS
