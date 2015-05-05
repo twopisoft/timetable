@@ -5,29 +5,6 @@ import sys
 import warnings
 import argparse
 
-parser = argparse.ArgumentParser()
-parser.add_argument("start_row", type=int, help="Start Row number in the Schedule xlsx file")
-parser.add_argument("end_row", type=int, help="End Row number in the Schedule xlsx file")
-parser.add_argument("schedule_xlsx", help="Input Schedule xlsx filename")
-parser.add_argument("teacher_xlsx", help="Input Teacher xlsx filename")
-parser.add_argument("param_file", help="Ouput param filename")
-
-parser.add_argument("--day_start_col", help="Start Column for day in input schedule xlsx file (default: K)")
-parser.add_argument("--day_end_col", help="End Column for day in input schedule xlsx file (default: O)")
-
-args = parser.parse_args()
-
-schedule_xlsx = args.schedule_xlsx
-teacher_xlsx = args.teacher_xlsx
-param_file = args.param_file
-ava_file = args.param_file + '.ava'
-
-num_groups = abs(args.start_row - args.end_row + 1)
-day_start_col = args.day_start_col or 'K'
-day_end_col = args.day_end_col or 'O'
-
-day_range = '{0}{1}:{2}{3}'.format(day_start_col,args.start_row,day_end_col,args.end_row)
-
 SLOTS = 8
 DAYS = 5
 WEEK_HRS = 16
@@ -37,10 +14,23 @@ MAX_HRS = 26
 
 WEEKDAYS = ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY']
 
+def __get_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("start_row", type=int, help="Start Row number in the Schedule xlsx file")
+    parser.add_argument("end_row", type=int, help="End Row number in the Schedule xlsx file")
+    parser.add_argument("schedule_xlsx", help="Input Schedule xlsx filename")
+    parser.add_argument("teacher_xlsx", help="Input Teacher xlsx filename")
+    parser.add_argument("param_file", help="Ouput param filename")
+
+    parser.add_argument("--day_start_col", help="Start Column for day in input schedule xlsx file (default: K)")
+    parser.add_argument("--day_end_col", help="End Column for day in input schedule xlsx file (default: O)")
+
+    return parser.parse_args()
+
 def __flatten(l):
     return [j for i in l for j in i]
 
-def read_slots(fname):
+def read_slots(fname,day_range):
 
     print 'Reading Slot Data ...'
 
@@ -99,14 +89,14 @@ def __availability():
 
     return availabilty
 
-def write_param_file(param_file,all_slots,availabilty):
+def write_param_file(param_file,all_slots,availability):
 
     print 'Writing param file "{0}" ...'.format(param_file)
     with open(param_file,'w') as outfile:
         outfile.write('letting NUM_GROUPS = {}\n'.format(len(all_slots)))
         outfile.write('letting NUM_TEACHERS = {}\n'.format(len(availability)))
         outfile.write('\nletting Demand = ' + str(all_slots))
-        outfile.write('\n\nletting Availability = ' + str(availabilty))
+        outfile.write('\n\nletting Availability = ' + str(availability))
 
 def test_resource_match(all_slots, num_teachers) :
 
@@ -141,9 +131,20 @@ def test_week_hrs(all_slots):
 
     return data_ok
 
-if __name__ == "__main__":    
+def main():
+    args = __get_args()
 
-    all_slots = read_slots(schedule_xlsx)
+    schedule_xlsx = args.schedule_xlsx
+    teacher_xlsx = args.teacher_xlsx
+    param_file = args.param_file
+
+    num_groups = abs(args.start_row - args.end_row + 1)
+    day_start_col = args.day_start_col or 'K'
+    day_end_col = args.day_end_col or 'O'
+
+    day_range = '{0}{1}:{2}{3}'.format(day_start_col,args.start_row,day_end_col,args.end_row)
+
+    all_slots = read_slots(schedule_xlsx,day_range)
     availability = read_teachers(teacher_xlsx)
     num_teachers = len(availability)
 
@@ -151,3 +152,6 @@ if __name__ == "__main__":
     test_week_hrs(all_slots)
 
     write_param_file(param_file,all_slots,availability)
+
+if __name__ == "__main__":
+    main()

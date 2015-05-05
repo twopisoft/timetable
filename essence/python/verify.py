@@ -1,14 +1,9 @@
 from pyparsing import Word, Literal, alphas, OneOrMore, Optional, Group, SkipTo, Suppress
 from openpyxl import Workbook, load_workbook
+from genparam import read_teachers
 import sys
 import argparse
 import warnings
-
-parser = argparse.ArgumentParser()
-parser.add_argument("solution_file", help="Input Solution filename")
-parser.add_argument("teacher_xlsx", help="Input Teacher xlsx filename")
-
-args = parser.parse_args()
 
 SLOTS = 40
 WKHRS = 16
@@ -20,6 +15,13 @@ DAYS = 5
 SLOTSD = 8
 
 WEEKDAYS = ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY']
+
+def __get_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("solution_file", help="Input Solution filename")
+    parser.add_argument("teacher_xlsx", help="Input Teacher xlsx filename")
+
+    return parser.parse_args()
 
 def __def_parser():
 
@@ -57,29 +59,6 @@ def parse_solution(f):
         roster.append(eval(str))
 
     return roster
-
-def read_teachers(fname, read_names=False):
-
-    print 'Reading Teacher Data ...'
-
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        wb = load_workbook(filename=fname, read_only=True)
-
-    ws = wb.active
-
-    availability = []
-    rows = list(ws.rows)
-    num_ent = 3 if read_names else 2
-    for row in rows[1:]:
-        hrs = [0]*num_ent
-        r = list(row)
-        start_index = 0 if read_names else 1
-        for (j,cell) in enumerate(r[start_index:]):
-            hrs[j] = cell.value
-        availability.append(hrs)
-
-    return availability
 
 def test_group_hours(roster):
     data_ok = True
@@ -138,8 +117,8 @@ def test_teacher_clash(roster):
 
     return data_ok
 
-if __name__ == "__main__":
-
+def main():
+    args = __get_args()
     roster = parse_solution(args.solution_file)
 
     availability = read_teachers(args.teacher_xlsx)
@@ -147,3 +126,7 @@ if __name__ == "__main__":
     test_group_hours(roster)
     test_teacher_hours(roster,availability)
     test_teacher_clash(roster)
+
+if __name__ == "__main__":
+    main()
+    
