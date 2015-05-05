@@ -14,6 +14,11 @@ SLOTS = 40
 WKHRS = 16
 MINHRS = 18
 MAXHRS = 26
+MINHRSD = 2
+MAXHRSD = 8
+DAYS = 5
+SLOTSD = 8
+
 
 def __def_parser():
 
@@ -77,15 +82,24 @@ def test_teacher_hours(roster,availability):
     data_ok = True
 
     t_hrs = { i:0 for i in range(1,TEACHERS+1) }
+    day_hrs = { i:[0]*DAYS for i in range(1,TEACHERS+1) }
+
     for g in roster:
-        for s in g:
+        for (i,s) in enumerate(g):
             if s != 0:
                 t_hrs[s] += 1
+                day = i/SLOTSD
+                print i,day
+                day_hrs[s][day] += 1  
 
     for t in t_hrs.keys():
         if (t_hrs[t] < availability[t-1][0]) or (t_hrs[t] > availability[t-1][1]):
             data_ok = False
             print "Scheduled Hours for Teacher {0} violated: {1}: [{2},{3}]".format(t,t_hrs[t],availability[t-1][0],availability[t-1][1])
+        for d in range(DAYS):
+            if (day_hrs[t][d] > 0) and ((day_hrs[t][d] < MINHRSD) or (day_hrs[t][d] > MAXHRSD)):
+                data_ok = False
+                print "Min/Max hours per day for Teacher {0} not fulfilled on day {1}: {2}: [{3},{4}]".format(t,d+1,day_hrs[t][d],MINHRSD,MAXHRSD)
 
     if data_ok:
         print "Teacher Scheduled Hours: Ok"
