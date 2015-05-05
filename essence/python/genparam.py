@@ -3,35 +3,35 @@ import random
 import math
 import sys
 import warnings
+import argparse
 
-if len(sys.argv) < 4:
-    print 'Usage: python genparam.py <NUM_GROUPS> <NUM_TEACHERS> <input xslx file> [<output param file>] [<availabilty file>]'
-    sys.exit(0)
+parser = argparse.ArgumentParser()
+parser.add_argument("start_row", type=int, help="Start Row number in the Schedule xlsx file")
+parser.add_argument("end_row", type=int, help="End Row number in the Schedule xlsx file")
+parser.add_argument("schedule_xlsx", help="Input Schedule xlsx filename")
+parser.add_argument("teacher_xlsx", help="Input Teacher xlsx filename")
+parser.add_argument("param_file", help="Ouput param filename")
 
-NUM_GROUPS = int(sys.argv[1])
-NUM_TEACHERS = int(sys.argv[2])
-EXCEL_FILE = sys.argv[3]
+parser.add_argument("--day_start_col", help="Start Column for day in input schedule xlsx file (default: K)")
+parser.add_argument("--day_end_col", help="End Column for day in input schedule xlsx file (default: O)")
 
-START = '80'
-END = str(80+NUM_GROUPS-1)
-DAY_COL_START = 'K'
-DAY_COL_END = 'O'
-GROUP_COL = 'E'
+args = parser.parse_args()
 
-GROUP_START = GROUP_COL + START
-GROUP_END = GROUP_COL + END
+schedule_xlsx = args.schedule_xlsx
+teacher_xlsx = args.teacher_xlsx
+param_file = args.param_file
+ava_file = args.param_file + '.ava'
 
-DAY_START = DAY_COL_START + START
-DAY_END = DAY_COL_END + END
+num_groups = abs(args.start_row - args.end_row + 1)
+day_start_col = args.day_start_col or 'K'
+day_end_col = args.day_end_col or 'O'
 
-GROUP_RANGE = GROUP_START + ':' + GROUP_END
-DAY_RANGE = DAY_START + ':' + DAY_END
+day_range = '{0}{1}:{2}{3}'.format(day_start_col,args.start_row,day_end_col,args.end_row)
 
 SLOTS = 8
 DAYS = 5
 WEEK_HRS = 16
 
-SPECIAL_PERCENT = 20.0/100
 MIN_HRS = 18
 MAX_HRS = 26
 
@@ -40,9 +40,18 @@ WEEKDAYS = ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY']
 def __flatten(l):
     return [j for i in l for j in i]
 
-def __read_slots(ws):
+def read_slots(fname):
+
+    print 'Reading Slot Data ...'
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        wb = load_workbook(filename=fname, read_only=True)
+
+    ws = wb.active
+
     all_slots = []
-    for (i,row) in enumerate(ws.iter_rows(DAY_RANGE)):
+    for (i,row) in enumerate(ws.iter_rows(day_range)):
         group_slots = []
         for cell in row:
             day_slots = [0]*SLOTS
@@ -57,6 +66,29 @@ def __read_slots(ws):
 
     return all_slots
 
+def read_teachers(fname, read_names=False):
+
+    print 'Reading Teacher Data ...'
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        wb = load_workbook(filename=fname, read_only=True)
+
+    ws = wb.active
+
+    availability = []
+    rows = list(ws.rows)
+    num_ent = 3 if read_names else 2
+    for row in rows[1:]:
+        hrs = [0]*num_ent
+        r = list(row)
+        start_index = 0 if read_names else 1
+        for (j,cell) in enumerate(r[start_index:]):
+            hrs[j] = cell.value
+        availability.append(hrs)
+
+    return availability
+
 def __availability():
     print 'Generating Availability data ...'
 
@@ -67,27 +99,16 @@ def __availability():
 
     return availabilty
 
-def write_param_file(all_slots,availabilty):
+def write_param_file(param_file,all_slots,availabilty):
 
-    if len(sys.argv) >= 5:
-        PARAM_FILE = sys.argv[4]
+    print 'Writing param file "{0}" ...'.format(param_file)
+    with open(param_file,'w') as outfile:
+        outfile.write('letting NUM_GROUPS = {}\n'.format(len(all_slots)))
+        outfile.write('letting NUM_TEACHERS = {}\n'.format(len(availability)))
+        outfile.write('\nletting Demand = ' + str(all_slots))
+        outfile.write('\n\nletting Availability = ' + str(availabilty))
 
-        print 'Writing param file "{0}" ...'.format(PARAM_FILE)
-        with open(PARAM_FILE,'w') as outfile:
-            outfile.write('letting NUM_GROUPS = {}\n'.format(len(all_slots)))
-            outfile.write('letting NUM_TEACHERS = {}\n'.format(NUM_TEACHERS))
-            outfile.write('\nletting Demand = ' + str(all_slots))
-            outfile.write('\n\nletting Availability = ' + str(availabilty))
-
-def write_availability_file(availability):
-    if len(sys.argv) >= 6:
-        AVAILABILITY_FILE = sys.argv[5]
-
-        print 'Writing Availability file "{0}" ...'.format(AVAILABILITY_FILE)
-        with open(AVAILABILITY_FILE,'w') as outfile:
-            outfile.write(str(availability))
-
-def test_resource_match(all_slots) :
+def test_resource_match(all_slots, num_teachers) :
 
     data_ok = True
 
@@ -96,9 +117,9 @@ def test_resource_match(all_slots) :
         for (i,g) in enumerate(all_slots):
             busy_slots += all_slots[i][s]
 
-        if busy_slots > NUM_TEACHERS:
+        if busy_slots > num_teachers:
             data_ok = False
-            print 'Found resource mismatch on {0} for slot {1}. busy_slots={2}, NUM_TEACHERS={3}'.format(WEEKDAYS[s/SLOTS],s,busy_slots,NUM_TEACHERS)
+            print 'Found resource mismatch on {0} for slot {1}. busy_slots={2}, num_teachers={3}'.format(WEEKDAYS[s/SLOTS],s,busy_slots,num_teachers)
 
     if data_ok:
         print 'Resource match check: Ok'
@@ -120,23 +141,13 @@ def test_week_hrs(all_slots):
 
     return data_ok
 
-if __name__ == "__main__":
+if __name__ == "__main__":    
 
-    print 'DAY RANGE={0}, NUM_GROUPS={1}, NUM_TEACHERS={2}'.format(DAY_RANGE,NUM_GROUPS,NUM_TEACHERS)
+    all_slots = read_slots(schedule_xlsx)
+    availability = read_teachers(teacher_xlsx)
+    num_teachers = len(availability)
 
-    print 'Reading Excel Data ...'
-
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        wb = load_workbook(filename=EXCEL_FILE, read_only=True)
-
-    ws = wb.active
-
-    all_slots = __read_slots(ws)
-    availability = __availability()
-
-    test_resource_match(all_slots)
+    test_resource_match(all_slots,num_teachers)
     test_week_hrs(all_slots)
 
-    write_param_file(all_slots,availability)
-    write_availability_file(availability)
+    write_param_file(param_file,all_slots,availability)
