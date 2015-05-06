@@ -1,12 +1,10 @@
 from openpyxl import Workbook
+from consts import MIN_HRS, MAX_HRS
 import random
 import math
 import sys
 import warnings
 import argparse
-
-MIN_HRS = 18
-MAX_HRS = 26
 
 def __availability(num_teachers,special_percent):
 

@@ -1,27 +1,20 @@
 from openpyxl import Workbook, load_workbook
+from consts import SLOTS, DAYS, WEEK_HRS, MIN_HRS, MAX_HRS, START_ROW, END_ROW, DAY_START_COL, DAY_END_COL, GROUP_COL, COURSE_CODE_COL, COURSE_NAME_COL, WEEKDAYS
 import random
 import math
 import sys
 import warnings
 import argparse
 
-SLOTS = 8
-DAYS = 5
-WEEK_HRS = 16
-
-MIN_HRS = 18
-MAX_HRS = 26
-
-WEEKDAYS = ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY']
-
 def __get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("start_row", type=int, help="Start Row number in the Schedule xlsx file")
-    parser.add_argument("end_row", type=int, help="End Row number in the Schedule xlsx file")
+    
     parser.add_argument("schedule_xlsx", help="Input Schedule xlsx filename")
     parser.add_argument("teacher_xlsx", help="Input Teacher xlsx filename")
     parser.add_argument("param_file", help="Ouput param filename")
 
+    parser.add_argument("--start_row", type=int, help="Start Row number in the Schedule xlsx file (default: 80)")
+    parser.add_argument("--end_row", type=int, help="End Row number in the Schedule xlsx file (default: 165)")
     parser.add_argument("--day_start_col", help="Start Column for day in input schedule xlsx file (default: K)")
     parser.add_argument("--day_end_col", help="End Column for day in input schedule xlsx file (default: O)")
 
@@ -138,11 +131,14 @@ def main():
     teacher_xlsx = args.teacher_xlsx
     param_file = args.param_file
 
-    num_groups = abs(args.start_row - args.end_row + 1)
-    day_start_col = args.day_start_col or 'K'
-    day_end_col = args.day_end_col or 'O'
+    start_row = args.start_row or START_ROW
+    end_row = args.end_row or  END_ROW
 
-    day_range = '{0}{1}:{2}{3}'.format(day_start_col,args.start_row,day_end_col,args.end_row)
+    num_groups = abs(start_row - end_row) + 1
+    day_start_col = args.day_start_col or DAY_START_COL
+    day_end_col = args.day_end_col or DAY_END_COL
+
+    day_range = '{0}{1}:{2}{3}'.format(day_start_col,start_row,day_end_col,end_row)
 
     all_slots = read_slots(schedule_xlsx,day_range)
     availability = read_teachers(teacher_xlsx)

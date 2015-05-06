@@ -1,20 +1,10 @@
 from pyparsing import Word, Literal, alphas, OneOrMore, Optional, Group, SkipTo, Suppress
 from openpyxl import Workbook, load_workbook
 from genparam import read_teachers
+from consts import MIN_HRS, MAX_HRS, MIN_HRSD, MAX_HRSD, SLOTS, WK_SLOTS, DAYS, WEEKDAYS, WEEK_HRS
 import sys
 import argparse
 import warnings
-
-SLOTS = 40
-WKHRS = 16
-MINHRS = 18
-MAXHRS = 26
-MINHRSD = 2
-MAXHRSD = 8
-DAYS = 5
-SLOTSD = 8
-
-WEEKDAYS = ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY']
 
 def __get_args():
     parser = argparse.ArgumentParser()
@@ -65,9 +55,9 @@ def test_group_hours(roster):
 
     for (i,g) in enumerate(roster):
         study_hrs = len(g) - g.count(0)
-        if study_hrs != WKHRS:
+        if study_hrs != WEEK_HRS:
             data_ok = False
-            print "Group {0} hours not scheduled correctly: {1} != {2}".format(i+1,study_hrs,WKHRS)
+            print "Group {0} hours not scheduled correctly: {1} != {2}".format(i+1,study_hrs,WEEK_HRS)
 
     if data_ok:
         print "Groups Study Hours: Ok"
@@ -85,7 +75,7 @@ def test_teacher_hours(roster,availability):
         for (i,s) in enumerate(g):
             if s != 0:
                 t_hrs[s] += 1
-                day = i/SLOTSD
+                day = i/SLOTS
                 day_hrs[s][day] += 1  
 
     for t in t_hrs.keys():
@@ -93,9 +83,9 @@ def test_teacher_hours(roster,availability):
             data_ok = False
             print "Scheduled Hours for Teacher {0} violated: {1}: [{2},{3}]".format(t,t_hrs[t],availability[t-1][0],availability[t-1][1])
         for d in range(DAYS):
-            if (day_hrs[t][d] > 0) and ((day_hrs[t][d] < MINHRSD) or (day_hrs[t][d] > MAXHRSD)):
+            if (day_hrs[t][d] > 0) and ((day_hrs[t][d] < MIN_HRSD) or (day_hrs[t][d] > MAX_HRSD)):
                 data_ok = False
-                print "Min/Max hours per day for Teacher {0} not fulfilled on {1}: {2}: [{3},{4}]".format(t,WEEKDAYS[d],day_hrs[t][d],MINHRSD,MAXHRSD)
+                print "Min/Max hours per day for Teacher {0} not fulfilled on {1}: {2}: [{3},{4}]".format(t,WEEKDAYS[d],day_hrs[t][d],MIN_HRSD,MAX_HRSD)
 
     if data_ok:
         print "Teacher Scheduled Hours: Ok"
