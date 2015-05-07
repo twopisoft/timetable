@@ -6,6 +6,7 @@ import sys
 import warnings
 import argparse
 import logging
+import re
 
 def __get_args():
     parser = argparse.ArgumentParser(prog='genparam.py', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -38,23 +39,30 @@ def read_slots(fname,day_range,read_rooms=False):
 
     all_slots = []
     all_rooms = []
+    re_room = re.compile(r"\(([\w/]+)\)",flags=re.UNICODE)
+
     for (i,row) in enumerate(ws.iter_rows(day_range)):
         group_slots = []
+        group_room_slots = []
         for cell in row:
             day_slots = [0]*SLOTS
             room_slots = ['']*SLOTS
             slots = cell.value.split(',')
-            room_index = -1
-            for slot in slots:
+            cur_room = ''
+            for slot in slots[::-1]:
                 s = slot.split('(')
+                if len(s) > 1: 
+                    cur_room = re_room.findall(slot)[0]
                 #index = int(math.floor((int(s[0])-1)/2))
                 index = int(s[0])-1
                 day_slots[index] = 1
-
-                room_index = index if room_index == -1 else -1
+                room_slots[index] = cur_room
                 
             group_slots.append(day_slots)
+            group_room_slots.append(room_slots)
+
         all_slots.append(__flatten(group_slots))
+        all_rooms.append(__flatten(group_room_slots))
 
     if read_rooms:
         return all_slots,all_rooms

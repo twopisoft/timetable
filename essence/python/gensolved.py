@@ -1,6 +1,6 @@
 from openpyxl import Workbook, load_workbook
 from openpyxl.utils import column_index_from_string
-from genparam import read_teachers
+from genparam import read_teachers, read_slots
 from verify import parse_solution
 from consts import SLOTS, DAYS, START_ROW, END_ROW, DAY_START_COL, DAY_END_COL, GROUP_COL, COURSE_CODE_COL, COURSE_NAME_COL, WEEKDAYS
 import sys
@@ -60,7 +60,7 @@ def __copy_data(schedule_xlsx,start_row,num_rows,group_col,course_code_col,cours
     out_ws = out_wb.active
     out_ws.title = in_ws.title
 
-    header = ['Course Code','Course Name','Hours','Group'] + WEEKDAYS + ['Remarks']
+    header = [u'Course Code',u'Course Name',u'Hours',u'Group'] + WEEKDAYS + [u'Remarks']
     for (i,h) in enumerate(header):
         out_ws.cell(row=1, column=i+1, value=h)
 
@@ -103,7 +103,7 @@ def __inverse_roster(roster, gr_dict):
 
     return inv
 
-def gen_student_tt(solved_xlsx, wb, teacher_data, roster):
+def gen_student_tt(solved_xlsx, wb, teacher_data, roster, rooms):
 
     logging.info('Generating Student Timetable ...')
 
@@ -113,38 +113,42 @@ def gen_student_tt(solved_xlsx, wb, teacher_data, roster):
         i = row - 2
         
         for d in range(DAYS):
-            value = ''
+            value = u''
             for s in range(SLOTS):
                 t = roster[i][s+SLOTS*d]
+                room = rooms[i][s+SLOTS*d]
                 if t != 0:
-                    value += '{0} - {1}'.format(s+1,teacher_data[t-1][0]) + '\n'
+                    value += u'{0} - {1} {2}'.format(s+1,teacher_data[t-1][0],room) + u'\n'
             ws.cell(row=row,column=5+d,value=value) 
 
     wb.save(filename=solved_xlsx)
 
-def gen_teacher_tt(solved_teacher_xlsx, teacher_data, gr_dict, roster):
+def gen_teacher_tt(solved_teacher_xlsx, teacher_data, gr_dict, roster, rooms):
 
     logging.info('Generating Teacher Timetable ...')
 
     wb = Workbook()
     ws = wb.active
 
-    header = ['Teacher Name'] + WEEKDAYS + ['Hours/Week']
+    header = [u'Teacher Name'] + WEEKDAYS + [u'Hours/Week']
     for (i,h) in enumerate(header):
         ws.cell(row=1, column=i+1, value=h)
 
     iroster = __inverse_roster(roster, gr_dict)
+    igr_dict = { gr_dict[k]:k-1 for k in gr_dict.keys() }
 
     col_offset = 2
     row_offset = 2
     for (t,td) in enumerate(teacher_data):
         hrs = 0
         for d in range(DAYS):
-            value = ''
+            value = u''
             for s in range(SLOTS):
                 g = iroster[t+1][d][s]
                 if g != 0:
-                    value += '{0} - {1}'.format(s+1,g) + '\n'
+                    ig = igr_dict[g]
+                    room = rooms[ig][s+SLOTS*d]
+                    value += u'{0} - {1} {2}'.format(s+1,g,room) + u'\n'
                     hrs += 1
             ws.cell(row=t+row_offset,column=d+col_offset,value=value)
 
@@ -173,13 +177,15 @@ def main():
 
     solution_wb = __copy_data(args.schedule_xlsx,start_row,num_groups,group_col,course_code_col,course_name_col)
     teacher_data = read_teachers(args.teacher_xlsx, read_names=True)
+    _,rooms = read_slots(args.schedule_xlsx, day_range, read_rooms=True)
+
     roster = parse_solution(args.solution_file)
 
-    gen_student_tt(args.solved_xlsx, solution_wb, teacher_data, roster)
+    gen_student_tt(args.solved_xlsx, solution_wb, teacher_data, roster, rooms)
 
     if args.solved_teacher_xlsx:
         gr_dict = __group_dict(args.schedule_xlsx,start_row,num_groups,group_col)
-        gen_teacher_tt(args.solved_teacher_xlsx,teacher_data, gr_dict, roster)
+        gen_teacher_tt(args.solved_teacher_xlsx,teacher_data, gr_dict, roster, rooms)
 
 if __name__ == "__main__":
     main()

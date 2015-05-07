@@ -44,4 +44,4 @@ COURSE_CODE_COL = 'A'
 COURSE_NAME_COL = 'B'
 
 # Weekdays names
-WEEKDAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday']
+WEEKDAYS = [u'Sunday',u'Monday',u'Tuesday',u'Wednesday',u'Thursday']
