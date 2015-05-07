@@ -6,28 +6,30 @@ from consts import SLOTS, DAYS, START_ROW, END_ROW, DAY_START_COL, DAY_END_COL, 
 import sys
 import warnings
 import argparse
-
+import logging
 
 def __get_args():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(prog='gensolved.py', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     
     parser.add_argument("schedule_xlsx", help="Input Schedule xlsx filename")
     parser.add_argument("teacher_xlsx", help="Input Teacher xlsx filename")
     parser.add_argument("solution_file", help="Input solution filename")
     parser.add_argument("solved_xlsx", help="Output xlsx filename for student's timetable")
 
-    parser.add_argument("--start_row", type=int, help="Start Row number in the Schedule xlsx file (default: {})".format(START_ROW))
-    parser.add_argument("--end_row", type=int, help="End Row number in the Schedule xlsx file (default: {})".format(END_ROW))
-    parser.add_argument("--day_start_col", help="Start Column for day in input schedule xlsx file (default: {})".format(DAY_START_COL))
-    parser.add_argument("--day_end_col", help="End Column for day in input schedule xlsx file (default: {})".format(DAY_END_COL))
-    parser.add_argument("--group_col", help="Group Column in input schedule xlsx file (default: {})".format(GROUP_COL))
-    parser.add_argument("--course_code_col", help="Course Code Column in input schedule xlsx file (default: {})".format(COURSE_CODE_COL))
-    parser.add_argument("--course_name_col", help="Course Name Column in input schedule xlsx file (default: {})".format(COURSE_NAME_COL))
+    parser.add_argument("--start_row", type=int, default=START_ROW, help="Start Row number in the Schedule xlsx file")
+    parser.add_argument("--end_row", type=int, default=END_ROW, help="End Row number in the Schedule xlsx file")
+    parser.add_argument("--day_start_col", default=DAY_START_COL, help="Start Column for day in input schedule xlsx file")
+    parser.add_argument("--day_end_col", default=DAY_END_COL, help="End Column for day in input schedule xlsx file")
+    parser.add_argument("--group_col", default=GROUP_COL, help="Group Column in input schedule xlsx file")
+    parser.add_argument("--course_code_col", default=COURSE_CODE_COL, help="Course Code Column in input schedule xlsx file")
+    parser.add_argument("--course_name_col", default=COURSE_NAME_COL, help="Course Name Column in input schedule xlsx file")
     parser.add_argument("--solved_teacher_xlsx", help="Output xlsx filename for teacher's timetable")
+
+    parser.add_argument("--loglevel", default='info', choices=['info','warning'], help="Set the logging level")
 
     return parser.parse_args()
 
-def copy_col_cells(in_ws, out_ws, in_data_range, out_col, has_header=True):
+def __copy_col_cells(in_ws, out_ws, in_data_range, out_col, has_header=True):
 
     out_col_index = column_index_from_string(out_col)
     row_offset = 2 if has_header else 1
@@ -38,15 +40,15 @@ def copy_col_cells(in_ws, out_ws, in_data_range, out_col, has_header=True):
 
     return out_ws
 
-def copy_value(out_ws,value,data_range):
+def __copy_value(out_ws,value,data_range):
     
     for row in out_ws.iter_rows(data_range):
         for cell in row:
             cell.value = value
 
-def copy_data(schedule_xlsx,start_row,num_rows,group_col,course_code_col,course_name_col):
+def __copy_data(schedule_xlsx,start_row,num_rows,group_col,course_code_col,course_name_col):
 
-    print 'Copying Data ...'
+    logging.info('Copying Data ...')
 
     out_wb = Workbook()
 
@@ -63,32 +65,13 @@ def copy_data(schedule_xlsx,start_row,num_rows,group_col,course_code_col,course_
         out_ws.cell(row=1, column=i+1, value=h)
 
     for (incol,outcol) in [(course_code_col,'A'),(course_name_col,'B'),(group_col,'D')]:
-        out_ws = copy_col_cells(in_ws,out_ws,'{0}{1}:{0}{2}'.format(incol,start_row,start_row+num_rows-1),outcol)
+        out_ws = __copy_col_cells(in_ws,out_ws,'{0}{1}:{0}{2}'.format(incol,start_row,start_row+num_rows-1),outcol)
 
-    out_ws = copy_value(out_ws, 16, '{0}{1}:{0}{2}'.format('C',2,num_rows+1))
+    out_ws = __copy_value(out_ws, 16, '{0}{1}:{0}{2}'.format('C',2,num_rows+1))
 
     return out_wb
 
-def gen_student_tt(solved_xlsx, wb, teacher_data, roster):
-
-    print 'Generating Student Timetable ...'
-
-    ws = wb.active
-    num_rows = len(roster)
-    for row in range(2,num_rows+2):
-        i = row - 2
-        
-        for d in range(DAYS):
-            value = ''
-            for s in range(SLOTS):
-                t = roster[i][s+SLOTS*d]
-                if t != 0:
-                    value += '{0} - {1}'.format(s+1,teacher_data[t-1][0]) + '\n'
-            ws.cell(row=row,column=5+d,value=value) 
-
-    wb.save(filename=solved_xlsx)
-
-def group_dict(schedule_xlsx,start_row,num_groups,group_col):
+def __group_dict(schedule_xlsx,start_row,num_groups,group_col):
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
@@ -105,7 +88,7 @@ def group_dict(schedule_xlsx,start_row,num_groups,group_col):
 
     return gr_dict
 
-def inverse_roster(roster, gr_dict):
+def __inverse_roster(roster, gr_dict):
 
     inv = {}
 
@@ -120,9 +103,28 @@ def inverse_roster(roster, gr_dict):
 
     return inv
 
+def gen_student_tt(solved_xlsx, wb, teacher_data, roster):
+
+    logging.info('Generating Student Timetable ...')
+
+    ws = wb.active
+    num_rows = len(roster)
+    for row in range(2,num_rows+2):
+        i = row - 2
+        
+        for d in range(DAYS):
+            value = ''
+            for s in range(SLOTS):
+                t = roster[i][s+SLOTS*d]
+                if t != 0:
+                    value += '{0} - {1}'.format(s+1,teacher_data[t-1][0]) + '\n'
+            ws.cell(row=row,column=5+d,value=value) 
+
+    wb.save(filename=solved_xlsx)
+
 def gen_teacher_tt(solved_teacher_xlsx, teacher_data, gr_dict, roster):
 
-    print 'Generating Teacher Timetable ...'
+    logging.info('Generating Teacher Timetable ...')
 
     wb = Workbook()
     ws = wb.active
@@ -131,7 +133,7 @@ def gen_teacher_tt(solved_teacher_xlsx, teacher_data, gr_dict, roster):
     for (i,h) in enumerate(header):
         ws.cell(row=1, column=i+1, value=h)
 
-    iroster = inverse_roster(roster, gr_dict)
+    iroster = __inverse_roster(roster, gr_dict)
 
     col_offset = 2
     row_offset = 2
@@ -154,26 +156,29 @@ def gen_teacher_tt(solved_teacher_xlsx, teacher_data, gr_dict, roster):
 def main():
     args = __get_args()
 
-    start_row = args.start_row or START_ROW
-    end_row = args.end_row or  END_ROW
-    group_col = args.group_col or GROUP_COL
-    course_code_col = args.course_code_col or COURSE_CODE_COL
-    course_name_col = args.course_name_col or COURSE_NAME_COL
+    log_level = getattr(logging, args.loglevel.upper(), None)
+    logging.basicConfig(level=log_level, format='%(asctime)s - %(levelname)s : %(message)s', datefmt='%Y-%m-%d %I:%M:%S %p')
+
+    start_row = args.start_row
+    end_row = args.end_row
+    group_col = args.group_col
+    course_code_col = args.course_code_col
+    course_name_col = args.course_name_col
 
     num_groups = abs(start_row - end_row) + 1
-    day_start_col = args.day_start_col or DAY_START_COL
-    day_end_col = args.day_end_col or DAY_END_COL
+    day_start_col = args.day_start_col
+    day_end_col = args.day_end_col
 
     day_range = '{0}{1}:{2}{3}'.format(day_start_col,start_row,day_end_col,end_row)
 
-    solution_wb = copy_data(args.schedule_xlsx,start_row,num_groups,group_col,course_code_col,course_name_col)
+    solution_wb = __copy_data(args.schedule_xlsx,start_row,num_groups,group_col,course_code_col,course_name_col)
     teacher_data = read_teachers(args.teacher_xlsx, read_names=True)
     roster = parse_solution(args.solution_file)
 
     gen_student_tt(args.solved_xlsx, solution_wb, teacher_data, roster)
 
     if args.solved_teacher_xlsx:
-        gr_dict = group_dict(args.schedule_xlsx,start_row,num_groups,group_col)
+        gr_dict = __group_dict(args.schedule_xlsx,start_row,num_groups,group_col)
         gen_teacher_tt(args.solved_teacher_xlsx,teacher_data, gr_dict, roster)
 
 if __name__ == "__main__":

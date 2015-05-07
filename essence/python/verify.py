@@ -5,11 +5,14 @@ from consts import MIN_HRS, MAX_HRS, MIN_HRSD, MAX_HRSD, SLOTS, WK_SLOTS, DAYS, 
 import sys
 import argparse
 import warnings
+import logging
 
 def __get_args():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(prog='verify.py', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("solution_file", help="Input Solution filename")
     parser.add_argument("teacher_xlsx", help="Input Teacher xlsx filename")
+
+    parser.add_argument("--loglevel", default='info', choices=['info','warning'], help="Set the logging level")
 
     return parser.parse_args()
 
@@ -57,10 +60,10 @@ def test_group_hours(roster):
         study_hrs = len(g) - g.count(0)
         if study_hrs != WEEK_HRS:
             data_ok = False
-            print "Group {0} hours not scheduled correctly: {1} != {2}".format(i+1,study_hrs,WEEK_HRS)
+            logging.warning("Group {0} hours not scheduled correctly: {1} != {2}".format(i+1,study_hrs,WEEK_HRS))
 
     if data_ok:
-        print "Groups Study Hours: Ok"
+        logging.info("Groups Study Hours: Ok")
 
     return data_ok
 
@@ -81,14 +84,14 @@ def test_teacher_hours(roster,availability):
     for t in t_hrs.keys():
         if (t_hrs[t] < availability[t-1][0]) or (t_hrs[t] > availability[t-1][1]):
             data_ok = False
-            print "Scheduled Hours for Teacher {0} violated: {1}: [{2},{3}]".format(t,t_hrs[t],availability[t-1][0],availability[t-1][1])
+            logging.warning("Scheduled Hours for Teacher {0} violated: {1}: [{2},{3}]".format(t,t_hrs[t],availability[t-1][0],availability[t-1][1]))
         for d in range(DAYS):
             if (day_hrs[t][d] > 0) and ((day_hrs[t][d] < MIN_HRSD) or (day_hrs[t][d] > MAX_HRSD)):
                 data_ok = False
-                print "Min/Max hours per day for Teacher {0} not fulfilled on {1}: {2}: [{3},{4}]".format(t,WEEKDAYS[d],day_hrs[t][d],MIN_HRSD,MAX_HRSD)
+                logging.warning("Min/Max hours per day for Teacher {0} not fulfilled on {1}: {2}: [{3},{4}]".format(t,WEEKDAYS[d],day_hrs[t][d],MIN_HRSD,MAX_HRSD))
 
     if data_ok:
-        print "Teacher Scheduled Hours: Ok"
+        logging.info("Teacher Scheduled Hours: Ok")
 
     return data_ok
 
@@ -100,15 +103,19 @@ def test_teacher_clash(roster):
         slot_assigns = [ roster[g][s] for g in range(num_groups) if roster[g][s] != 0]
         if len(slot_assigns) > len(set(slot_assigns)):
             data_ok = False
-            print "Clash detected on slot {0}".format(s)
+            logging.warning("Clash detected on slot {0}".format(s))
 
     if data_ok:
-        print "Clash detected: None"
+        logging.info("Clash detected: None")
 
     return data_ok
 
 def main():
     args = __get_args()
+
+    log_level = getattr(logging, args.loglevel.upper(), None)
+    logging.basicConfig(level=log_level, format='%(asctime)s - %(levelname)s : %(message)s', datefmt='%Y-%m-%d %I:%M:%S %p')
+
     roster = parse_solution(args.solution_file)
 
     availability = read_teachers(args.teacher_xlsx)
