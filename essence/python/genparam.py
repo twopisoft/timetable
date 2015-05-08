@@ -39,7 +39,7 @@ def read_slots(fname,day_range,read_rooms=False):
 
     all_slots = []
     all_rooms = []
-    re_room = re.compile(r"\(([\w/]+)\)",flags=re.UNICODE)
+    re_room = re.compile(r"(\([\w/]+\))",flags=re.UNICODE)
 
     for (i,row) in enumerate(ws.iter_rows(day_range)):
         group_slots = []

@@ -1,5 +1,6 @@
 from openpyxl import Workbook, load_workbook
-from openpyxl.utils import column_index_from_string
+from openpyxl.utils import column_index_from_string, get_column_letter
+from openpyxl.styles import Alignment, Style
 from genparam import read_teachers, read_slots
 from verify import parse_solution
 from consts import SLOTS, DAYS, START_ROW, END_ROW, DAY_START_COL, DAY_END_COL, GROUP_COL, COURSE_CODE_COL, COURSE_NAME_COL, WEEKDAYS
@@ -59,6 +60,7 @@ def __copy_data(schedule_xlsx,start_row,num_rows,group_col,course_code_col,cours
     in_ws = in_wb.active
     out_ws = out_wb.active
     out_ws.title = in_ws.title
+    out_ws.sheet_view.rightToLeft = True
 
     header = [u'Course Code',u'Course Name',u'Hours',u'Group'] + WEEKDAYS + [u'Remarks']
     for (i,h) in enumerate(header):
@@ -109,6 +111,8 @@ def gen_student_tt(solved_xlsx, wb, teacher_data, roster, rooms):
 
     ws = wb.active
     num_rows = len(roster)
+    align_style = Style(alignment=Alignment(wrap_text=True))
+
     for row in range(2,num_rows+2):
         i = row - 2
         
@@ -118,8 +122,11 @@ def gen_student_tt(solved_xlsx, wb, teacher_data, roster, rooms):
                 t = roster[i][s+SLOTS*d]
                 room = rooms[i][s+SLOTS*d]
                 if t != 0:
-                    value += u'{0} - {1} {2}'.format(s+1,teacher_data[t-1][0],room) + u'\n'
-            ws.cell(row=row,column=5+d,value=value) 
+                    value += u'{0} - {1} : {2}\n'.format(s+1,teacher_data[t-1][0],room) 
+            coord = '%s%s' % (get_column_letter(5+d), row)
+            cell = ws.cell(coord)
+            cell.style = align_style
+            cell.value = value
 
     wb.save(filename=solved_xlsx)
 
@@ -129,6 +136,7 @@ def gen_teacher_tt(solved_teacher_xlsx, teacher_data, gr_dict, roster, rooms):
 
     wb = Workbook()
     ws = wb.active
+    ws.sheet_view.rightToLeft = True
 
     header = [u'Teacher Name'] + WEEKDAYS + [u'Hours/Week']
     for (i,h) in enumerate(header):
@@ -139,6 +147,8 @@ def gen_teacher_tt(solved_teacher_xlsx, teacher_data, gr_dict, roster, rooms):
 
     col_offset = 2
     row_offset = 2
+    align_style = Style(alignment=Alignment(wrap_text=True))
+
     for (t,td) in enumerate(teacher_data):
         hrs = 0
         for d in range(DAYS):
@@ -148,9 +158,13 @@ def gen_teacher_tt(solved_teacher_xlsx, teacher_data, gr_dict, roster, rooms):
                 if g != 0:
                     ig = igr_dict[g]
                     room = rooms[ig][s+SLOTS*d]
-                    value += u'{0} - {1} {2}'.format(s+1,g,room) + u'\n'
+                    value += u'{0} - {1} : {2}\n'.format(s+1,g,room)
                     hrs += 1
-            ws.cell(row=t+row_offset,column=d+col_offset,value=value)
+
+            coord = '%s%s' % (get_column_letter(d+col_offset), t+row_offset)
+            cell = ws.cell(coord)
+            cell.style = align_style
+            cell.value = value
 
         ws.cell(row=t+row_offset,column=1,value=td[0])
         ws.cell(row=t+row_offset,column=7,value=hrs)
