@@ -87,7 +87,8 @@ def read_teachers(fname, read_names=False):
         r = list(row)
         start_index = 0 if read_names else 1
         for (j,cell) in enumerate(r[start_index:]):
-            hrs[j] = cell.value
+            value = cell.value
+            hrs[j] = value if type(value) is unicode else int(value)
         availability.append(hrs)
 
     return availability
