@@ -6,7 +6,7 @@ given NUM_TEACHERS : int(1..)
 $ Minimum and Maximum hours of teaching for a teacher. The Availability matrix will read in the actual values
 $ for each teacher
 
-letting MINHRS    be 18
+letting MINHRS    be 8
 letting MAXHRS    be 26
 
 $ A group's study hours per week

@@ -11,7 +11,7 @@ WK_SLOTS = SLOTS * DAYS
 WEEK_HRS = 16
 
 # Minimum teaching hours per week limit per teacher
-MIN_HRS = 18
+MIN_HRS = 8
 
 # Maximum teaching hours per week limit per teacher
 MAX_HRS = 26
