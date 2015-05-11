@@ -1,3 +1,9 @@
 data/*
 *.pyc
 !data/sched.xlsx
+.metadata
+.settings
+.project
+.classpath
+local.properties
+.DS_Store
