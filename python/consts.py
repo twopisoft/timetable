@@ -1,5 +1,5 @@
 # Number of slots (periods) per day
-SLOTS = 8
+SLOTS = 12
 
 # Number of days per week
 DAYS = 5
@@ -14,7 +14,7 @@ WEEK_HRS = 16
 MIN_HRS = 8
 
 # Maximum teaching hours per week limit per teacher
-MAX_HRS = 26
+MAX_HRS = 24
 
 # Minimum teaching hours per day limit per teacher
 MIN_HRSD = 2
@@ -23,19 +23,19 @@ MIN_HRSD = 2
 MAX_HRSD = 8
 
 # Data start row in input xlsx
-START_ROW = 80
+START_ROW = 2
 
 # Data end row in input xlsx
-END_ROW = 165
+END_ROW = 100
 
 # Day start column id in input xlsx file
-DAY_START_COL = 'K'
+DAY_START_COL = 'E'
 
 # Day end column id in input xlsx file
-DAY_END_COL = 'O'
+DAY_END_COL = 'I'
 
 # Group column id in input xlsx file
-GROUP_COL = 'E'
+GROUP_COL = 'D'
 
 # Course code column id in input xlsx file
 COURSE_CODE_COL = 'A'
@@ -45,3 +45,6 @@ COURSE_NAME_COL = 'B'
 
 # Weekdays names
 WEEKDAYS = [u'Sunday',u'Monday',u'Tuesday',u'Wednesday',u'Thursday']
+
+# Teacher Data Range
+TEACHER_RANGE = 'A2:C77'

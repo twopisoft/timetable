@@ -1,5 +1,5 @@
 from openpyxl import Workbook, load_workbook
-from consts import SLOTS, DAYS, WEEK_HRS, MIN_HRS, MAX_HRS, START_ROW, END_ROW, DAY_START_COL, DAY_END_COL, GROUP_COL, COURSE_CODE_COL, COURSE_NAME_COL, WEEKDAYS
+from consts import SLOTS, DAYS, WEEK_HRS, MIN_HRS, MAX_HRS, START_ROW, END_ROW, DAY_START_COL, DAY_END_COL, GROUP_COL, COURSE_CODE_COL, COURSE_NAME_COL, WEEKDAYS, TEACHER_RANGE
 import random
 import math
 import sys
@@ -39,7 +39,7 @@ def read_slots(fname,day_range,read_rooms=False):
 
     all_slots = []
     all_rooms = []
-    re_room = re.compile(r"(\([\w/]+\))",flags=re.UNICODE)
+    re_room = re.compile(r"(\([\w\s*/]+\))",flags=re.UNICODE)
 
     for (i,row) in enumerate(ws.iter_rows(day_range)):
         group_slots = []
@@ -47,10 +47,10 @@ def read_slots(fname,day_range,read_rooms=False):
         for cell in row:
             day_slots = [0]*SLOTS
             room_slots = ['']*SLOTS
-            slots = cell.value.split(',')
+            slots = cell.value.split(u',')
             cur_room = ''
             for slot in slots[::-1]:
-                s = slot.split('(')
+                s = slot.split(u'(')
                 if len(s) > 1: 
                     cur_room = re_room.findall(slot)[0]
                 #index = int(math.floor((int(s[0])-1)/2))
@@ -80,9 +80,23 @@ def read_teachers(fname, read_names=False):
     ws = wb.active
 
     availability = []
+
+    '''
     rows = list(ws.rows)
     num_ent = 3 if read_names else 2
     for row in rows[1:]:
+        hrs = [0]*num_ent
+        r = list(row)
+        start_index = 0 if read_names else 1
+        print read_names,num_ent,start_index
+        for (j,cell) in enumerate(r[start_index:]):
+            value = cell.value
+            print j,value
+            hrs[j] = value if type(value) is unicode else int(value)
+        availability.append(hrs)
+    '''
+    num_ent = 3 if read_names else 2
+    for row in ws.iter_rows(TEACHER_RANGE):
         hrs = [0]*num_ent
         r = list(row)
         start_index = 0 if read_names else 1
