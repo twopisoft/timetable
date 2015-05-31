@@ -3,7 +3,7 @@ from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Alignment, Style
 import re
 
-in_wb = load_workbook(filename='../data/first_term_schedule.xlsx', read_only=True)
+in_wb = load_workbook(filename='../data/first_term_schedule_v1.xlsx', read_only=True)
 out_wb = Workbook()
 in_ws = in_wb.active
 out_ws = out_wb.active
@@ -26,7 +26,9 @@ for (ri,irow) in enumerate(in_ws.iter_rows('A1:I320')):
             val = ocell.value
             
             if val is not None:
-                if type(ivalue) is unicode:
+                if type(ivalue) is unicode or ci+1 != 4:
+                    if type(ivalue) is float:
+                        ivalue = int(ivalue)
                     val = u"{0} {1}".format(val,ivalue)
             else:
                 val = ivalue
@@ -46,4 +48,4 @@ for (r,orow) in enumerate(out_ws.iter_rows('E2:I100')):
     for (c,co) in enumerate(orow):
         co.value = co.value.replace(u' (',u':(').replace(u' ',u',').replace(u':',u' ')
 
-out_wb.save('../data/first_term_schedule_cleaned2.xlsx')
+out_wb.save('../data/first_term_schedule_v1_cleaned.xlsx')
