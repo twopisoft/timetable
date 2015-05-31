@@ -95,12 +95,15 @@ def __inverse_roster(roster, gr_dict):
     inv = {}
 
     for (g,group) in enumerate(roster):
+        if g == 0:
+            print roster[g]
         for (s,t) in enumerate(group):
             if t != 0:
                 if not t in inv.keys():
-                    inv[t] = [[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]]
+                    inv[t] = [[0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0]]
                 d = s/SLOTS
-                st = int((s/float(SLOTS) - d)*SLOTS)
+                st = int(round((s/float(SLOTS) - d)*SLOTS))
+
                 inv[t][d][st] = gr_dict[g+1]
 
     return inv
