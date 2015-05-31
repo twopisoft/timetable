@@ -7,14 +7,14 @@ $ Minimum and Maximum hours of teaching for a teacher. The Availability matrix w
 $ for each teacher
 
 letting MINHRS    be 8
-letting MAXHRS    be 26
+letting MAXHRS    be 24
 
 $ A group's study hours per week
 letting WKHRS     be 16
 
 letting GROUP   be domain int(1..NUM_GROUPS)
 letting TEACHER be domain int(1..NUM_TEACHERS)
-letting SLOT    be domain int(1..40)
+letting SLOT    be domain int(1..60)
 
 given Demand        : matrix indexed by [GROUP,SLOT] of int(0..1)
 given Availability  : matrix indexed by [TEACHER,int(0..1)] of int(MINHRS..MAXHRS)
