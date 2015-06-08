@@ -1,23 +1,36 @@
 language ESSENCE' 1.0
 
-given NUM_GROUPS : int(1..)
-given NUM_TEACHERS : int(1..)
+given NUM_GROUPS    : int(1..)
+given NUM_TEACHERS  : int(1..)
+given WEEK_SLOTS    : int(1..)
+given MIN_HRS       : int(1..)
+given MAX_HRS       : int(1..)
+given WEEK_HRS      : int(1..)
 
 $ Minimum and Maximum hours of teaching for a teacher. The Availability matrix will read in the actual values
 $ for each teacher
 
-letting MINHRS    be 8
-letting MAXHRS    be 24
+letting MINHRS    be MIN_HRS
+letting MAXHRS    be MAX_HRS
+
+$ Regular Teachers with 16-24 allocation / week
+letting NUM_REG   = NUM_TEACHERS - 8  
 
 $ A group's study hours per week
-letting WKHRS     be 16
+letting WKHRS     be WEEK_HRS
 
-letting GROUP   be domain int(1..NUM_GROUPS)
-letting TEACHER be domain int(1..NUM_TEACHERS)
-letting SLOT    be domain int(1..60)
+letting GROUP       be domain int(1..NUM_GROUPS)
+letting TEACHER     be domain int(1..NUM_TEACHERS)
+letting SLOT        be domain int(1..WEEK_SLOTS)
+letting RTEACHER    be domain int(1..NUM_REG)
 
 given Demand        : matrix indexed by [GROUP,SLOT] of int(0..1)
 given Availability  : matrix indexed by [TEACHER,int(0..1)] of int(MINHRS..MAXHRS)
+
+$ Initial Group assignments for Regular teachers. There is a 1-to-1 correspondence between Group id and Regular teacher id 
+$ for Groups id <= NUM_REG. Hence this works only when NUM_GROUPS >= NUM_REG and Minimum Hours for teacher >= WKHRS
+$ E.g. Each regular teacher's minimum hours = 16 >= WKHRS = 16
+letting InitAssigns : matrix indexed by [RTEACHER,SLOT] of int(0,RTEACHER) = [ [ t*Demand[t,s] | s : SLOT] | t : RTEACHER ]
 
 find  Roster        : matrix indexed by [GROUP,SLOT] of int(0,TEACHER)
 
@@ -40,6 +53,11 @@ atmost(flatten(Roster), [ Availability[t,1] | t : TEACHER], [ t | t : TEACHER ])
 
 $ All groups must have WKHRS hrs of study per week
 forAll g : GROUP .
-    sum([ Roster[g,s] > 0 | s : SLOT]) = WKHRS
+    sum([ Roster[g,s] > 0 | s : SLOT]) = WKHRS,
+
+forAll t : RTEACHER .
+    table(flatten(Roster[t,..]), [flatten(InitAssigns[t,..])])
+
+
 
 
