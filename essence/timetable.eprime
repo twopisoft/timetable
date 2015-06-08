@@ -56,7 +56,7 @@ forAll g : GROUP .
     sum([ Roster[g,s] > 0 | s : SLOT]) = WKHRS,
 
 forAll t : RTEACHER .
-    table(flatten(Roster[t,..]), [flatten(InitAssigns[t,..])])
+    table(Roster[t,..], [InitAssigns[t,..]])
 
 
 
