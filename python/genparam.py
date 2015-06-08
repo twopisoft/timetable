@@ -1,5 +1,5 @@
 from openpyxl import Workbook, load_workbook
-from consts import SLOTS, DAYS, WEEK_HRS, MIN_HRS, MAX_HRS, START_ROW, END_ROW, DAY_START_COL, DAY_END_COL, GROUP_COL, COURSE_CODE_COL, COURSE_NAME_COL, WEEKDAYS, TEACHER_RANGE
+from consts import SLOTS, DAYS, WK_SLOTS, WEEK_HRS, MIN_HRS, MAX_HRS, START_ROW, END_ROW, DAY_START_COL, DAY_END_COL, GROUP_COL, COURSE_CODE_COL, COURSE_NAME_COL, WEEKDAYS, TEACHER_RANGE
 import random
 import math
 import sys
@@ -123,6 +123,10 @@ def write_param_file(param_file,all_slots,availability):
     with open(param_file,'w') as outfile:
         outfile.write('letting NUM_GROUPS = {}\n'.format(len(all_slots)))
         outfile.write('letting NUM_TEACHERS = {}\n'.format(len(availability)))
+        outfile.write('letting WEEK_SLOTS = {}\n'.format(WK_SLOTS))
+        outfile.write('letting MIN_HRS = {}\n'.format(MIN_HRS))
+        outfile.write('letting MAX_HRS = {}\n'.format(MAX_HRS))
+        outfile.write('letting WEEK_HRS = {}\n'.format(WEEK_HRS))
         outfile.write('\nletting Demand = ' + str(all_slots))
         outfile.write('\n\nletting Availability = ' + str(availability))
 
