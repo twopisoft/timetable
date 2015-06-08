@@ -10,3 +10,4 @@ local.properties
 .recommenders
 target
 .ipynb*
+.MINION*
