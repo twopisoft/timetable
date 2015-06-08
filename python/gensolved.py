@@ -95,8 +95,6 @@ def __inverse_roster(roster, gr_dict):
     inv = {}
 
     for (g,group) in enumerate(roster):
-        if g == 0:
-            print roster[g]
         for (s,t) in enumerate(group):
             if t != 0:
                 if not t in inv.keys():
