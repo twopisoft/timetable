@@ -1,7 +1,7 @@
 from pyparsing import Word, Literal, alphas, OneOrMore, Optional, Group, SkipTo, Suppress
 from openpyxl import Workbook, load_workbook
 from genparam import read_teachers
-from consts import MIN_HRS, MAX_HRS, MIN_HRSD, MAX_HRSD, SLOTS, WK_SLOTS, DAYS, WEEKDAYS, WEEK_HRS
+from consts import MIN_HRS, MAX_HRS, MIN_HRSD, MAX_HRSD, SLOTS, WK_SLOTS, DAYS, WEEKDAYS, WEEK_HRS, MAX_TEACHERS
 import sys
 import argparse
 import warnings
@@ -110,6 +110,24 @@ def test_teacher_clash(roster):
 
     return data_ok
 
+def test_group_teacher_count(roster):
+    data_ok = True
+
+    for (i,g) in enumerate(roster):
+        teachers = set()
+        for s in g:
+            if s > 0:
+                teachers.add(s)
+
+        if len(teachers) > MAX_TEACHERS:
+            data_ok = False
+            logging.warning("Group {0} teachers count > {1}: {2}".format(i+1,MAX_TEACHERS,list(teachers)))
+
+    if data_ok:
+        logging.info("Groups Teachers Count: Ok")
+
+    return data_ok
+
 def main():
     args = __get_args()
 
@@ -123,6 +141,7 @@ def main():
     test_group_hours(roster)
     test_teacher_hours(roster,availability)
     test_teacher_clash(roster)
+    test_group_teacher_count(roster)
 
 if __name__ == "__main__":
     main()

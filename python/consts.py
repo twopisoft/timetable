@@ -22,11 +22,16 @@ MIN_HRSD = 2
 # Maximum teaching hours per day limit per teacher
 MAX_HRSD = 8
 
+# Maximum teachers per group
+MAX_TEACHERS = 4
+
 # Data start row in input xlsx
 START_ROW = 2
+#START_ROW = 7
 
 # Data end row in input xlsx
 END_ROW = 100
+#END_ROW = 69  # for subset version
 
 # Day start column id in input xlsx file
 DAY_START_COL = 'E'
@@ -48,3 +53,4 @@ WEEKDAYS = [u'Sunday',u'Monday',u'Tuesday',u'Wednesday',u'Thursday']
 
 # Teacher Data Range
 TEACHER_RANGE = 'A2:C77'
+#TEACHER_RANGE = 'A10:C77'  # for subset version
