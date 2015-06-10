@@ -113,15 +113,21 @@ def test_teacher_clash(roster):
 def test_group_teacher_count(roster):
     data_ok = True
 
+    mint = 1000
     for (i,g) in enumerate(roster):
         teachers = set()
         for s in g:
             if s > 0:
                 teachers.add(s)
 
+        n = len(teachers)
+        mint = n if n < mint else mint
+
         if len(teachers) > MAX_TEACHERS:
             data_ok = False
             logging.warning("Group {0} teachers count > {1}: {2}".format(i+1,MAX_TEACHERS,list(teachers)))
+
+    logging.info("Minimum Teacher Count: {}".format(mint))
 
     if data_ok:
         logging.info("Groups Teachers Count: Ok")

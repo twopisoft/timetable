@@ -23,7 +23,7 @@ MIN_HRSD = 2
 MAX_HRSD = 8
 
 # Maximum teachers per group
-MAX_TEACHERS = 4
+MAX_TEACHERS = 5
 
 # Data start row in input xlsx
 START_ROW = 2
