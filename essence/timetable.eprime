@@ -3,33 +3,32 @@ language ESSENCE' 1.0
 given NUM_GROUPS    : int(1..)
 given NUM_TEACHERS  : int(1..)
 given WEEK_SLOTS    : int(1..)
-given MIN_HRS       : int(1..)
-given MAX_HRS       : int(1..)
-given WEEK_HRS      : int(1..)
-
-$ Minimum and Maximum hours of teaching for a teacher. The Availability matrix will read in the actual values
-$ for each teacher
-
-letting MINHRS    be MIN_HRS
-letting MAXHRS    be MAX_HRS
+given MIN_HRS       : int(1..)      $ Minimum and Maximum hours/week limits of teaching for a teacher. The Availability matrix will read in the actual values
+given MAX_HRS       : int(1..)      $ for each teacher
+given WEEK_HRS      : int(1..)      $ A group's study hours per week
+given MAX_TEACHERS  : int(1..)      $ Maximum Number of Teachers that a group can have
+given MIND_HRS      : int(1..)      $ Minimum and Maximum hours/day limits of teaching for a teacher
+given MAXD_HRS      : int(1..)
+given DAYS          : int(1..)
+given DAY_SLOTS     : int(1..)
 
 $ Regular Teachers with 16-24 allocation / week
 letting NUM_REG   = NUM_TEACHERS - 8  
 
-$ A group's study hours per week
-letting WKHRS     be WEEK_HRS
-
 letting GROUP       be domain int(1..NUM_GROUPS)
 letting TEACHER     be domain int(1..NUM_TEACHERS)
 letting SLOT        be domain int(1..WEEK_SLOTS)
+letting DSLOT       be domain int(1,1+DAY_SLOTS,1+DAY_SLOTS*2,1+DAY_SLOTS*3,1+DAY_SLOTS*4)
 letting RTEACHER    be domain int(1..NUM_REG)
 
 given Demand        : matrix indexed by [GROUP,SLOT] of int(0..1)
-given Availability  : matrix indexed by [TEACHER,int(0..1)] of int(MINHRS..MAXHRS)
+given Availability  : matrix indexed by [TEACHER,int(0..1)] of int(MIN_HRS..MAX_HRS)
 
 $ Initial Group assignments for Regular teachers. There is a 1-to-1 correspondence between Group id and Regular teacher id 
-$ for Groups id <= NUM_REG. Hence this works only when NUM_GROUPS >= NUM_REG and Minimum Hours for teacher >= WKHRS
-$ E.g. Each regular teacher's minimum hours = 16 >= WKHRS = 16
+$ for Groups id <= NUM_REG. Hence this works only when NUM_GROUPS >= NUM_REG and Minimum Hours for teacher >= WEEK_HRS
+$ E.g. Each regular teacher's minimum hours = 16 >= WEEK_HRS = 16
+$ Note: The python report generator assumes that regular teachers are at the beginning of teacher list
+
 letting InitAssigns : matrix indexed by [RTEACHER,SLOT] of int(0,RTEACHER) = [ [ t*Demand[t,s] | s : SLOT] | t : RTEACHER ]
 
 find  Roster        : matrix indexed by [GROUP,SLOT] of int(0,TEACHER)
@@ -45,18 +44,40 @@ $ All the assigned teachers for a slot must be different
 forAll s : SLOT .
     alldifferent_except(Roster[..,s],0),
 
-$ Every teacher must not be assigned less than his MINHRS
+$ Every teacher must not be assigned less than his MIN_HRS
 atleast(flatten(Roster), [ Availability[t,0] | t : TEACHER], [ t | t : TEACHER ]),
 
-$ Every teacher must not be assigned more than his MAXHRS
+$ Every teacher must not be assigned more than his MAX_HRS
 atmost(flatten(Roster), [ Availability[t,1] | t : TEACHER], [ t | t : TEACHER ]),
 
-$ All groups must have WKHRS hrs of study per week
+$ All groups must have WEEK_HRS hrs of study per week
 forAll g : GROUP .
-    sum([ Roster[g,s] > 0 | s : SLOT]) = WKHRS,
+    sum([ Roster[g,s] > 0 | s : SLOT]) = WEEK_HRS,
+
+$ Enforce main group assignments to each regular teacher
+forAll t : RTEACHER .
+    table(Roster[t,..], [InitAssigns[t,..]]),
+
+$ Each group can be assigned atmost MAX_TEACHERS. 
+$ Explanation: 
+$ The nested sum expression finds the number
+$ of unique teachers assigned to a group. The inner comprehension finds a boolean array
+$ where a True means teacher of type id is assigned and False if it is not. Using
+$ auto conversion of boolean to integer, the inner sum then returns number of times
+$ a teacher is assigned to a group. The outer comprehension uses the >= 1 condition to
+$ generate whether a teacher is assigned irrespective of number of slots he is assigned.
+$ Then outer sum finds number of unique teachers assigned to a group.
+
+forAll g : GROUP .
+    sum([ sum([ Roster[g,s] = t | s : SLOT ]) >= 1 | t : TEACHER ]) <= MAX_TEACHERS,
+
+$ Following two constraints make sure a teacher is assigned minimum of MIND_HRS and maximum of MAXD_HRS (2,8)
 
 forAll t : RTEACHER .
-    table(Roster[t,..], [InitAssigns[t,..]])
+    min([ sum ([ exists g : GROUP . Roster[g,d+i] = t  | i : int(0..DAY_SLOTS-1) ]) | d : DSLOT ]) >= MIND_HRS,
+
+forAll t : RTEACHER .
+    max([ sum ([ exists g : GROUP . Roster[g,d+i] = t  | i : int(0..DAY_SLOTS-1) ]) | d : DSLOT ]) <= MAXD_HRS
 
 
 
