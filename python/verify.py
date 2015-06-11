@@ -142,7 +142,7 @@ def main():
 
     roster = parse_solution(args.solution_file)
 
-    availability = read_teachers(args.teacher_xlsx)
+    availability,_ = read_teachers(args.teacher_xlsx)
 
     test_group_hours(roster)
     test_teacher_hours(roster,availability)

@@ -191,7 +191,7 @@ def main():
     day_range = '{0}{1}:{2}{3}'.format(day_start_col,start_row,day_end_col,end_row)
 
     solution_wb = __copy_data(args.schedule_xlsx,start_row,num_groups,group_col,course_code_col,course_name_col)
-    teacher_data = read_teachers(args.teacher_xlsx, read_names=True)
+    teacher_data,_ = read_teachers(args.teacher_xlsx, read_names=True)
     _,rooms = read_slots(args.schedule_xlsx, day_range, read_rooms=True)
 
     roster = parse_solution(args.solution_file)

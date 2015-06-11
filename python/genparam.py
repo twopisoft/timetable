@@ -97,6 +97,7 @@ def read_teachers(fname, read_names=False):
         availability.append(hrs)
     '''
     num_ent = 3 if read_names else 2
+    num_special = 0
     for row in ws.iter_rows(TEACHER_RANGE):
         hrs = [0]*num_ent
         r = list(row)
@@ -104,9 +105,14 @@ def read_teachers(fname, read_names=False):
         for (j,cell) in enumerate(r[start_index:]):
             value = cell.value
             hrs[j] = value if type(value) is unicode else int(value)
+
+        # check max hours
+        if hrs[num_ent-1] < WEEK_HRS:
+            num_special += 1
+
         availability.append(hrs)
 
-    return availability
+    return availability,num_special
 
 def __availability():
     logging.info('Generating Availability data ...')
@@ -118,22 +124,23 @@ def __availability():
 
     return availabilty
 
-def write_param_file(param_file,all_slots,availability):
+def write_param_file(param_file,all_slots,availability,num_special):
 
     logging.info('Writing param file "{0}" ...'.format(param_file))
     with open(param_file,'w') as outfile:
-        outfile.write('letting NUM_GROUPS = {}\n'.format(len(all_slots)))
-        outfile.write('letting NUM_TEACHERS = {}\n'.format(len(availability)))
-        outfile.write('letting WEEK_SLOTS = {}\n'.format(WK_SLOTS))
-        outfile.write('letting MIN_HRS = {}\n'.format(MIN_HRS))
-        outfile.write('letting MAX_HRS = {}\n'.format(MAX_HRS))
-        outfile.write('letting WEEK_HRS = {}\n'.format(WEEK_HRS))
-        outfile.write('letting MAX_TEACHERS = {}\n'.format(MAX_TEACHERS))
-        outfile.write('letting MIND_HRS = {}\n'.format(MIN_HRSD))
-        outfile.write('letting MAXD_HRS = {}\n'.format(MAX_HRSD))
-        outfile.write('letting DAYS = {}\n'.format(DAYS))
-        outfile.write('letting DAY_SLOTS = {}\n'.format(SLOTS))
-        outfile.write('\nletting Demand = ' + str(all_slots))
+        outfile.write('letting NUM_GROUPS     = {}\n'.format(len(all_slots)))
+        outfile.write('letting NUM_TEACHERS   = {}\n'.format(len(availability)))
+        outfile.write('letting NUM_SPECIAL    = {}\n'.format(num_special))
+        outfile.write('letting MIN_HRS        = {}\n'.format(MIN_HRS))
+        outfile.write('letting MAX_HRS        = {}\n'.format(MAX_HRS))
+        outfile.write('letting WEEK_HRS       = {}\n'.format(WEEK_HRS))
+        outfile.write('letting MAX_TEACHERS   = {}\n'.format(MAX_TEACHERS))
+        outfile.write('letting MIND_HRS       = {}\n'.format(MIN_HRSD))
+        outfile.write('letting MAXD_HRS       = {}\n'.format(MAX_HRSD))
+        outfile.write('letting DAYS           = {}\n'.format(DAYS))
+        outfile.write('letting DAY_SLOTS      = {}\n'.format(SLOTS))
+        outfile.write('letting WEEK_SLOTS     = {}\n'.format(WK_SLOTS))
+        outfile.write('\nletting Demand       = ' + str(all_slots))
         outfile.write('\n\nletting Availability = ' + str(availability))
 
 def test_resource_match(all_slots, num_teachers) :
@@ -189,13 +196,13 @@ def main():
     day_range = '{0}{1}:{2}{3}'.format(day_start_col,start_row,day_end_col,end_row)
 
     all_slots = read_slots(schedule_xlsx,day_range)
-    availability = read_teachers(teacher_xlsx)
+    availability,num_special = read_teachers(teacher_xlsx)
     num_teachers = len(availability)
 
     test_resource_match(all_slots,num_teachers)
     test_week_hrs(all_slots)
 
-    write_param_file(param_file,all_slots,availability)
+    write_param_file(param_file,all_slots,availability,num_special)
 
 if __name__ == "__main__":
     main()
